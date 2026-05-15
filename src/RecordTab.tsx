@@ -1,152 +1,184 @@
 import { useState } from 'react'
-import { Card, Button, Modal, ActionIcon, Group, Text, Stack } from '@mantine/core'
-import { TimeInput, DateInput } from '@mantine/dates'
+import { Card, Button, Modal, ActionIcon, Group, Text, Stack, TextInput, SegmentedControl } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { STEPS, SleepRecord, getTonight, setTonight, archiveAndReset, fmtTime } from './store'
+import { NightRecord, NapRecord, NIGHT_STEPS, NAP_STEPS, getTonight, setTonight, archiveNight, getCurrentNap, setCurrentNap, archiveNap, fmtTime } from './store'
 
-type StepKey = keyof Omit<SleepRecord, 'wakes'>
+type Mode = 'night' | 'nap'
 
 export default function RecordTab() {
-  const [record, setRecord] = useState<SleepRecord>(getTonight)
+  const [mode, setMode] = useState<Mode>('night')
+  const [night, setNight] = useState<NightRecord>(getTonight)
+  const [nap, setNap] = useState<NapRecord>(getCurrentNap)
   const [pickerOpened, setPickerOpened] = useState(false)
   const [confirmOpened, setConfirmOpened] = useState(false)
-  const [actionTarget, setActionTarget] = useState<{ type: 'step'; key: StepKey } | { type: 'wake'; idx: number } | null>(null)
   const [timeValue, setTimeValue] = useState('')
-  const [dateValue, setDateValue] = useState<Date | null>(null)
+  const [dateValue, setDateValue] = useState('')
+  const [editTarget, setEditTarget] = useState<{ mode: Mode; key: string; wakeIdx?: number } | null>(null)
 
-  function openPicker(target: typeof actionTarget) {
-    setActionTarget(target)
-    if (target) {
-      const ts = target.type === 'step' ? record[target.key]! : record.wakes[target.idx]
-      const d = new Date(ts)
-      setTimeValue(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
-      setDateValue(d)
-    }
-    setPickerOpened(true)
-  }
-
-  function tap(key: StepKey) {
-    if (record[key]) {
-      openPicker({ type: 'step', key })
+  // --- Night ---
+  function tapNight(key: keyof Omit<NightRecord, 'wakes' | 'type'>) {
+    if (night[key]) {
+      openPicker('night', key)
     } else {
-      const updated = { ...record, [key]: Date.now() }
-      setTonight(updated)
-      setRecord(updated)
-      notifications.show({ message: `${STEPS.find(s => s.key === key)!.label} ✓`, position: 'bottom-center', autoClose: 2000 })
+      const updated = { ...night, [key]: Date.now() }
+      setTonight(updated); setNight(updated)
+      notifications.show({ message: `${NIGHT_STEPS.find(s => s.key === key)!.label} ✓`, position: 'bottom-center', autoClose: 2000 })
     }
   }
 
   function addWake() {
-    const updated = { ...record, wakes: [...record.wakes, Date.now()] }
-    setTonight(updated)
-    setRecord(updated)
+    const updated = { ...night, wakes: [...night.wakes, Date.now()] }
+    setTonight(updated); setNight(updated)
     notifications.show({ message: `醒来 #${updated.wakes.length} ✓`, position: 'bottom-center', autoClose: 2000 })
   }
 
-  function editWake(idx: number) {
-    openPicker({ type: 'wake', idx })
+  function editWake(idx: number) { openPicker('night', 'wakes', idx) }
+  function deleteWake(idx: number) {
+    const updated = { ...night, wakes: night.wakes.filter((_, i) => i !== idx) }
+    setTonight(updated); setNight(updated)
   }
 
-  function deleteWake(idx: number) {
-    const updated = { ...record, wakes: record.wakes.filter((_, i) => i !== idx) }
-    setTonight(updated)
-    setRecord(updated)
+  function submitNight() { setConfirmOpened(true) }
+  function doSubmitNight() {
+    setConfirmOpened(false); archiveNight(night); setNight({ type: 'night', wakes: [] })
+    notifications.show({ message: '已归档，晚安 🌙', position: 'bottom-center', autoClose: 3000 })
+  }
+
+  // --- Nap ---
+  function tapNap(key: keyof Omit<NapRecord, 'type'>) {
+    if (nap[key]) {
+      openPicker('nap', key)
+    } else {
+      const updated = { ...nap, [key]: Date.now() }
+      setCurrentNap(updated); setNap(updated)
+      notifications.show({ message: `${NAP_STEPS.find(s => s.key === key)!.label} ✓`, position: 'bottom-center', autoClose: 2000 })
+    }
+  }
+
+  function submitNap() {
+    archiveNap(nap); setNap({ type: 'nap' })
+    notifications.show({ message: '小觉已记录 ☀️', position: 'bottom-center', autoClose: 3000 })
+  }
+
+  // --- Shared picker ---
+  function openPicker(m: Mode, key: string, wakeIdx?: number) {
+    setEditTarget({ mode: m, key, wakeIdx })
+    let ts: number
+    if (m === 'night') {
+      ts = key === 'wakes' ? night.wakes[wakeIdx!] : (night as any)[key]
+    } else {
+      ts = (nap as any)[key]
+    }
+    const d = new Date(ts)
+    setTimeValue(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+    setDateValue(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+    setPickerOpened(true)
   }
 
   function handlePickerSubmit() {
-    if (!actionTarget || !timeValue || !dateValue) return
+    if (!editTarget || !timeValue || !dateValue) return
     const [h, m] = timeValue.split(':').map(Number)
-    const d = new Date(dateValue)
-    d.setHours(h, m, 0, 0)
-    if (actionTarget.type === 'step') {
-      const updated = { ...record, [actionTarget.key]: d.getTime() }
-      setTonight(updated)
-      setRecord(updated)
+    const [y, mo, day] = dateValue.split('-').map(Number)
+    const ts = new Date(y, mo - 1, day, h, m, 0, 0).getTime()
+    if (editTarget.mode === 'night') {
+      if (editTarget.key === 'wakes') {
+        const wakes = [...night.wakes]; wakes[editTarget.wakeIdx!] = ts
+        const updated = { ...night, wakes }; setTonight(updated); setNight(updated)
+      } else {
+        const updated = { ...night, [editTarget.key]: ts }; setTonight(updated); setNight(updated)
+      }
     } else {
-      const wakes = [...record.wakes]
-      wakes[actionTarget.idx] = d.getTime()
-      const updated = { ...record, wakes }
-      setTonight(updated)
-      setRecord(updated)
+      const updated = { ...nap, [editTarget.key]: ts }; setCurrentNap(updated); setNap(updated)
     }
-    setPickerOpened(false)
   }
 
-  const [skipSaveOnClose, setSkipSaveOnClose] = useState(false)
-
   function setToNow() {
-    if (!actionTarget) return
-    if (actionTarget.type === 'step') {
-      const updated = { ...record, [actionTarget.key]: Date.now() }
-      setTonight(updated)
-      setRecord(updated)
+    if (!editTarget) return
+    const ts = Date.now()
+    if (editTarget.mode === 'night') {
+      if (editTarget.key === 'wakes') {
+        const wakes = [...night.wakes]; wakes[editTarget.wakeIdx!] = ts
+        const updated = { ...night, wakes }; setTonight(updated); setNight(updated)
+      } else {
+        const updated = { ...night, [editTarget.key]: ts }; setTonight(updated); setNight(updated)
+      }
     } else {
-      const wakes = [...record.wakes]
-      wakes[actionTarget.idx] = Date.now()
-      const updated = { ...record, wakes }
-      setTonight(updated)
-      setRecord(updated)
+      const updated = { ...nap, [editTarget.key]: ts }; setCurrentNap(updated); setNap(updated)
     }
-    setSkipSaveOnClose(true)
     setPickerOpened(false)
     notifications.show({ message: '已更新为此刻 ✓', position: 'bottom-center', autoClose: 2000 })
   }
 
-  function doSubmit() {
-    setConfirmOpened(false)
-    archiveAndReset(record)
-    setRecord({ wakes: [] })
-    notifications.show({ message: '已归档，晚安 🌙', position: 'bottom-center', autoClose: 3000 })
-  }
-
-  const hasData = record.bed || record.trySlp || record.slp || record.wakes.length || record.up
+  const nightHasData = night.bed || night.trySlp || night.slp || night.wakes.length || night.up
+  const napHasData = nap.start || nap.end
 
   return (
     <div className="record-page">
       <h1 className="record-title">🌙 睡眠记录</h1>
-      <Stack gap="xs">
-        {STEPS.map(({ key, label }) => (
-          <Card key={key} onClick={() => tap(key)} className={`step-card ${record[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
-            <Text ta="center" size="lg">{label}</Text>
-            {record[key] && <Text ta="center" size="sm" c="green">{fmtTime(record[key]!)} ✏️</Text>}
-          </Card>
-        ))}
-        <Card onClick={addWake} className={`step-card ${record.wakes.length ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
-          <Text ta="center" size="lg">醒来{record.wakes.length > 0 && ` (${record.wakes.length}次)`}</Text>
-        </Card>
-        {record.wakes.map((w, i) => (
-          <Group key={i} gap="xs" className="wake-item">
-            <Text size="sm" c="green" style={{ flex: 1, cursor: 'pointer' }} onClick={() => editWake(i)}>
-              醒来 #{i + 1}: {fmtTime(w)} ✏️
-            </Text>
-            <ActionIcon variant="subtle" color="red" size="sm" onClick={() => deleteWake(i)}>✕</ActionIcon>
-          </Group>
-        ))}
-      </Stack>
+      <SegmentedControl fullWidth value={mode} onChange={(v) => setMode(v as Mode)} data={[
+        { label: '🌙 夜间', value: 'night' },
+        { label: '☀️ 小觉', value: 'nap' },
+      ]} mb="sm" />
 
-      {hasData && (
-        <div className="submit-area">
-          <Button fullWidth size="lg" radius="md" onClick={() => setConfirmOpened(true)}>提交记录 ✓</Button>
-        </div>
+      {mode === 'night' ? (
+        <Stack gap="xs">
+          {NIGHT_STEPS.map(({ key, label }) => (
+            <Card key={key} onClick={() => tapNight(key)} className={`step-card ${night[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
+              <Text ta="center" size="lg">{label}</Text>
+              {night[key] && <Text ta="center" size="sm" c="green">{fmtTime(night[key]!)} ✏️</Text>}
+            </Card>
+          ))}
+          <Card onClick={addWake} className={`step-card ${night.wakes.length ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
+            <Text ta="center" size="lg">醒来{night.wakes.length > 0 && ` (${night.wakes.length}次)`}</Text>
+          </Card>
+          {night.wakes.map((w, i) => (
+            <Group key={i} gap="xs" className="wake-item">
+              <Text size="sm" c="green" style={{ flex: 1, cursor: 'pointer' }} onClick={() => editWake(i)}>醒来 #{i + 1}: {fmtTime(w)} ✏️</Text>
+              <ActionIcon variant="subtle" color="red" size="sm" onClick={() => deleteWake(i)}>✕</ActionIcon>
+            </Group>
+          ))}
+          {nightHasData && (
+            <div className="submit-area">
+              <Button fullWidth size="lg" radius="md" onClick={submitNight}>提交记录 ✓</Button>
+            </div>
+          )}
+        </Stack>
+      ) : (
+        <Stack gap="xs">
+          {NAP_STEPS.map(({ key, label }) => (
+            <Card key={key} onClick={() => tapNap(key)} className={`step-card ${nap[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
+              <Text ta="center" size="lg">{label}</Text>
+              {nap[key] && <Text ta="center" size="sm" c="green">{fmtTime(nap[key]!)} ✏️</Text>}
+            </Card>
+          ))}
+          {napHasData && (
+            <div className="submit-area">
+              <Button fullWidth size="lg" radius="md" onClick={submitNap}>提交小觉 ✓</Button>
+            </div>
+          )}
+        </Stack>
       )}
 
       {/* Time picker modal */}
-      <Modal opened={pickerOpened} onClose={() => { if (!skipSaveOnClose) handlePickerSubmit(); setSkipSaveOnClose(false); setPickerOpened(false) }} title="调整时间" centered>
+      <Modal opened={pickerOpened} onClose={() => setPickerOpened(false)} title="调整时间" centered>
         <Stack>
           <Group grow>
-            <DateInput value={dateValue} onChange={(v) => setDateValue(v ? new Date(v) : null)} label="日期" />
-            <TimeInput value={timeValue} onChange={(e) => setTimeValue(e.currentTarget.value)} label="时间" />
+            <TextInput type="date" value={dateValue} onChange={(e) => setDateValue(e.currentTarget.value)} label="日期" />
+            <TextInput type="time" value={timeValue} onChange={(e) => setTimeValue(e.currentTarget.value)} label="时间" />
           </Group>
-          <Button variant="light" onClick={setToNow} fullWidth>📍 此刻</Button>
+          <Group grow>
+            <Button variant="light" onClick={setToNow}>📍 此刻</Button>
+            <Button onClick={() => { handlePickerSubmit(); setPickerOpened(false) }}>确定</Button>
+          </Group>
         </Stack>
       </Modal>
 
-      {/* Submit confirmation */}
+      {/* Submit confirmation (night only) */}
       <Modal opened={confirmOpened} onClose={() => setConfirmOpened(false)} title="确认" centered>
         <Text>确认提交本次睡眠记录？</Text>
         <Group mt="md">
           <Button variant="default" onClick={() => setConfirmOpened(false)} flex={1}>取消</Button>
-          <Button onClick={doSubmit} flex={1}>确认</Button>
+          <Button onClick={doSubmitNight} flex={1}>确认</Button>
         </Group>
       </Modal>
     </div>

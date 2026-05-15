@@ -1,16 +1,18 @@
 # 🌙 Sleep Tracker
 
-A mobile-first PWA for tracking sleep patterns. Record bedtime, sleep onset, wake times, and get up time with a single tap each.
+A mobile-first PWA for tracking sleep patterns — both overnight sleep and daytime naps.
 
 ## Features
 
-- **One-tap recording** — 上床, 尝试入睡, 入睡, 醒来 (multiple), 起床
+- **Night mode** — 上床, 尝试入睡, 入睡, 醒来 (multiple), 起床
+- **Nap mode** — quick start/end recording for daytime naps
+- **Mode switch** — SegmentedControl toggles 🌙 夜间 / ☀️ 小觉
 - **Multiple wake support** — record each wake-up separately, edit/delete individually
-- **Time editing** — tap recorded time → ActionSheet (update to now / pick time)
-- **Date + Time picker** — TimeInput + DateInput, auto-saves on modal close
+- **Time editing** — tap recorded time → ActionSheet (update to now / pick time), confirm to save
 - **Editable history** — tap any record to edit all fields, add/delete wakes, delete record
+- **Unified timeline** — night (🌙) and nap (☀️) records in one history list
 - **Statistics** — 7-night rolling averages (sleep duration, onset latency, snooze time)
-- **Trend chart** — 30-night line chart (Chart.js)
+- **Trend charts** — 4 separate charts: sleep duration, onset latency, snooze time, total in-bed
 - **Data export** — CSV and JSON download
 - **PWA** — installable, works offline
 - **Dark theme** — Mantine dark color scheme
@@ -19,7 +21,7 @@ A mobile-first PWA for tracking sleep patterns. Record bedtime, sleep onset, wak
 
 - React 19 + TypeScript
 - Vite 8
-- Mantine (Tabs, Card, Button, Modal, TimeInput, DateInput, Notifications, ActionIcon, etc.)
+- Mantine (Tabs, Card, Button, Modal, SegmentedControl, TextInput, Notifications, etc.)
 - Chart.js + react-chartjs-2
 - Vitest + @testing-library/react (store.ts 100% coverage enforced)
 - ESLint (typescript-eslint + react-hooks + react-refresh)
@@ -45,7 +47,8 @@ Settings → Pages → Source: **GitHub Actions**
 ## Data Storage
 
 All data stored in browser `localStorage`:
-- `sleep_tonight` — current night's record (with `wakes: number[]`)
-- `sleep_history` — up to 90 archived records
+- `sleep_tonight` — current night's record (`NightRecord` with `wakes: number[]`)
+- `sleep_nap` — current in-progress nap (`NapRecord`)
+- `sleep_history` — up to 120 archived entries (nights + naps)
 
 No server, no account needed. Data migration auto-converts old `wake:number` format to `wakes:[]`.
