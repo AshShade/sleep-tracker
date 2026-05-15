@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useRef } from 'react'
 import { Card, Button, Text, Stack, Group, Modal, SimpleGrid, TextInput } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { getHistory, setHistory, SleepEntry, NightRecord, NapRecord, dur, fmtTime, fmtDateTime } from './store'
+import { getHistory, setHistory, SleepEntry, NightRecord, dur, fmtTime, fmtDateTime } from './store'
 
 export default function HistoryTab() {
+  const { t } = useTranslation()
   const [hist, setHist] = useState(getHistory)
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [pickerOpened, setPickerOpened] = useState(false)
@@ -11,7 +13,7 @@ export default function HistoryTab() {
   const [dateValue, setDateValue] = useState('')
   const editFieldRef = useRef<{ field: string; wakeIdx?: number } | null>(null)
 
-  if (!hist.length) return <Text c="dimmed" ta="center" py="xl">暂无记录</Text>
+  if (!hist.length) return <Text c="dimmed" ta="center" py="xl">{t('no_records')}</Text>
 
   function save(updated: SleepEntry[]) { setHistory(updated); setHist(updated) }
   const editingRecord = editIndex !== null ? hist[editIndex] : null
@@ -50,7 +52,7 @@ export default function HistoryTab() {
     if (editIndex === null) return
     const idx = editIndex; setEditIndex(null)
     save(hist.filter((_, i) => i !== idx))
-    notifications.show({ message: '已删除', position: 'bottom-center', autoClose: 2000 })
+    notifications.show({ message: t('deleted'), position: 'bottom-center', autoClose: 2000 })
   }
 
   function deleteWake(wakeIdx: number) {
@@ -103,21 +105,21 @@ export default function HistoryTab() {
   return (
     <>
       <Group gap="xs" mb="sm">
-        <Button variant="default" size="xs" flex={1} onClick={exportCSV}>导出 CSV</Button>
-        <Button variant="default" size="xs" flex={1} onClick={exportJSON}>导出 JSON</Button>
+        <Button variant="default" size="xs" flex={1} onClick={exportCSV}>{t('export_csv')}</Button>
+        <Button variant="default" size="xs" flex={1} onClick={exportJSON}>{t('export_json')}</Button>
       </Group>
       {nights.length > 0 && (
         <Card radius="md" withBorder mb="sm">
-          <Text size="xs" c="dimmed" mb="xs">近 {nights.length} 晚平均</Text>
+          <Text size="xs" c="dimmed" mb="xs">{t('avg_title', { count: nights.length })}</Text>
           <SimpleGrid cols={2}>
-            <div><Text size="xs" c="dimmed">入睡耗时</Text><Text size="sm" fw={600}>{avg('trySlp', 'slp')}</Text></div>
-            <div><Text size="xs" c="dimmed">睡眠时长</Text><Text size="sm" fw={600}>{avg('slp', 'wakes')}</Text></div>
-            <div><Text size="xs" c="dimmed">在床时长</Text><Text size="sm" fw={600}>{avg('bed', 'up')}</Text></div>
-            <div><Text size="xs" c="dimmed">赖床时间</Text><Text size="sm" fw={600}>{avg('wakes', 'up')}</Text></div>
+            <div><Text size="xs" c="dimmed">{t('onset_latency')}</Text><Text size="sm" fw={600}>{avg('trySlp', 'slp')}</Text></div>
+            <div><Text size="xs" c="dimmed">{t('sleep_duration')}</Text><Text size="sm" fw={600}>{avg('slp', 'wakes')}</Text></div>
+            <div><Text size="xs" c="dimmed">{t('in_bed')}</Text><Text size="sm" fw={600}>{avg('bed', 'up')}</Text></div>
+            <div><Text size="xs" c="dimmed">{t('snooze')}</Text><Text size="sm" fw={600}>{avg('wakes', 'up')}</Text></div>
           </SimpleGrid>
         </Card>
       )}
-      <Text size="sm" c="dimmed" mb="xs">历史记录</Text>
+      <Text size="sm" c="dimmed" mb="xs">{t('history')}</Text>
       <Stack gap="xs">
         {hist.map((r, i) => {
           if (r.type === 'nap') {
@@ -126,7 +128,7 @@ export default function HistoryTab() {
             return (
               <Card key={i} radius="sm" withBorder padding="xs" onClick={() => setEditIndex(i)} style={{ cursor: 'pointer' }}>
                 <Group><Text size="sm">☀️ {d.toLocaleDateString('zh-CN')}</Text>{napDur && <Text size="xs" c="green">💤 {napDur}</Text>}</Group>
-                <Text size="xs" c="dimmed">入睡 {r.start ? fmtTime(r.start) : '-'} → 醒来 {r.end ? fmtTime(r.end) : '-'}</Text>
+                <Text size="xs" c="dimmed">{t('nap_start')} {r.start ? fmtTime(r.start) : '-'} → {t('nap_end')} {r.end ? fmtTime(r.end) : '-'}</Text>
               </Card>
             )
           }
@@ -135,53 +137,53 @@ export default function HistoryTab() {
           return (
             <Card key={i} radius="sm" withBorder padding="xs" onClick={() => setEditIndex(i)} style={{ cursor: 'pointer' }}>
               <Group><Text size="sm">🌙 {d.toLocaleDateString('zh-CN')}</Text>{sleepMs > 0 && <Text size="xs" c="green">💤 {dur(sleepMs)}</Text>}</Group>
-              <Text size="xs" c="dimmed">上床 {r.bed ? fmtTime(r.bed) : '-'} → 入睡 {r.slp ? fmtTime(r.slp) : '-'} → 醒 {r.wakes.length}次 → 起床 {r.up ? fmtTime(r.up) : '-'}</Text>
+              <Text size="xs" c="dimmed">{t('bed')} {r.bed ? fmtTime(r.bed) : '-'} → {t('slp')} {r.slp ? fmtTime(r.slp) : '-'} → {t('wake')} {r.wakes.length} → {t('up')} {r.up ? fmtTime(r.up) : '-'}</Text>
             </Card>
           )
         })}
       </Stack>
 
       {/* Edit modal */}
-      <Modal opened={editIndex !== null && !pickerOpened} onClose={() => setEditIndex(null)} title="编辑记录" centered>
+      <Modal opened={editIndex !== null && !pickerOpened} onClose={() => setEditIndex(null)} title={t('edit_record')} centered>
         {editingRecord && editingRecord.type === 'night' && (
           <Stack>
             {(['bed', 'trySlp', 'slp', 'up'] as const).map(f => (
               <Group key={f} justify="space-between" onClick={() => editField(f)} style={{ cursor: 'pointer' }}>
-                <Text size="sm">{{ bed: '上床', trySlp: '尝试入睡', slp: '入睡', up: '起床' }[f]}</Text>
+                <Text size="sm">{t(f)}</Text>
                 <Text size="sm" c="green">{editingRecord[f] ? fmtDateTime(editingRecord[f]!) : '-'} ✏️</Text>
               </Group>
             ))}
             {editingRecord.wakes.map((w, wi) => (
               <Group key={wi} justify="space-between">
-                <Text size="sm" onClick={() => editField('wakes', wi)} style={{ cursor: 'pointer', flex: 1 }}>醒来 #{wi + 1}: {fmtDateTime(w)} ✏️</Text>
-                <Button variant="subtle" color="red" size="xs" onClick={() => deleteWake(wi)}>删除</Button>
+                <Text size="sm" onClick={() => editField('wakes', wi)} style={{ cursor: 'pointer', flex: 1 }}>{t('wake_n', { n: wi + 1 })}: {fmtDateTime(w)} ✏️</Text>
+                <Button variant="subtle" color="red" size="xs" onClick={() => deleteWake(wi)}>{t('delete')}</Button>
               </Group>
             ))}
-            <Button variant="subtle" size="xs" onClick={addWake}>+ 添加醒来</Button>
-            <Button color="red" variant="light" fullWidth onClick={deleteRecord} mt="md">删除此记录</Button>
+            <Button variant="subtle" size="xs" onClick={addWake}>{t('add_wake')}</Button>
+            <Button color="red" variant="light" fullWidth onClick={deleteRecord} mt="md">{t('delete_record')}</Button>
           </Stack>
         )}
         {editingRecord && editingRecord.type === 'nap' && (
           <Stack>
             {(['start', 'end'] as const).map(f => (
               <Group key={f} justify="space-between" onClick={() => editField(f)} style={{ cursor: 'pointer' }}>
-                <Text size="sm">{{ start: '入睡', end: '醒来' }[f]}</Text>
+                <Text size="sm">{t(f === 'start' ? 'nap_start' : 'nap_end')}</Text>
                 <Text size="sm" c="green">{editingRecord[f] ? fmtDateTime(editingRecord[f]!) : '-'} ✏️</Text>
               </Group>
             ))}
-            <Button color="red" variant="light" fullWidth onClick={deleteRecord} mt="md">删除此记录</Button>
+            <Button color="red" variant="light" fullWidth onClick={deleteRecord} mt="md">{t('delete_record')}</Button>
           </Stack>
         )}
       </Modal>
 
       {/* Time picker */}
-      <Modal opened={pickerOpened} onClose={() => setPickerOpened(false)} title="调整时间" centered>
+      <Modal opened={pickerOpened} onClose={() => setPickerOpened(false)} title={t('adjust_time')} centered>
         <Stack>
           <Group grow>
-            <TextInput type="date" value={dateValue} onChange={(e) => setDateValue(e.currentTarget.value)} label="日期" />
-            <TextInput type="time" value={timeValue} onChange={(e) => setTimeValue(e.currentTarget.value)} label="时间" />
+            <TextInput type="date" value={dateValue} onChange={(e) => setDateValue(e.currentTarget.value)} label={t('date')} />
+            <TextInput type="time" value={timeValue} onChange={(e) => setTimeValue(e.currentTarget.value)} label={t('time')} />
           </Group>
-          <Button onClick={() => { handlePickerSubmit(); setPickerOpened(false) }} fullWidth>确定</Button>
+          <Button onClick={() => { handlePickerSubmit(); setPickerOpened(false) }} fullWidth>{t('confirm_yes')}</Button>
         </Stack>
       </Modal>
     </>

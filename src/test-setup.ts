@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import './i18n'
 
 // Mantine requires matchMedia in jsdom
 Object.defineProperty(window, 'matchMedia', {

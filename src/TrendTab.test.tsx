@@ -10,7 +10,7 @@ beforeEach(() => localStorage.clear())
 describe('TrendTab', () => {
   it('shows message when less than 2 records', () => {
     render(<TrendTab />, { wrapper: W })
-    expect(screen.getByText(/至少需要 2 条记录/)).toBeInTheDocument()
+    expect(screen.getByText(/Need at least 2 records/)).toBeInTheDocument()
   })
 
   it('renders charts with sufficient data', () => {
@@ -20,9 +20,9 @@ describe('TrendTab', () => {
     ]
     localStorage.setItem('sleep_history', JSON.stringify(records))
     render(<TrendTab />, { wrapper: W })
-    expect(screen.getByText('睡眠时长')).toBeInTheDocument()
-    expect(screen.getByText('入睡耗时')).toBeInTheDocument()
-    expect(screen.getByText('赖床时间')).toBeInTheDocument()
-    expect(screen.getByText('在床总时长')).toBeInTheDocument()
+    expect(screen.getByText('Sleep duration')).toBeInTheDocument()
+    expect(screen.getByText('Onset latency')).toBeInTheDocument()
+    expect(screen.getByText('Snooze time')).toBeInTheDocument()
+    expect(screen.getByText('Total in-bed')).toBeInTheDocument()
   })
 })

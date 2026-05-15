@@ -1,12 +1,14 @@
 # 🌙 Sleep Tracker
 
+[中文](./README.zh-CN.md)
+
 A mobile-first PWA for tracking sleep patterns — both overnight sleep and daytime naps.
 
 ## Features
 
-- **Night mode** — 上床, 尝试入睡, 入睡, 醒来 (multiple), 起床
+- **Night mode** — Bedtime, Try to sleep, Fell asleep, Woke up (multiple), Got up
 - **Nap mode** — quick start/end recording for daytime naps
-- **Mode switch** — SegmentedControl toggles 🌙 夜间 / ☀️ 小觉
+- **Mode switch** — SegmentedControl toggles 🌙 Night / ☀️ Nap
 - **Multiple wake support** — record each wake-up separately, edit/delete individually
 - **Time editing** — tap recorded time → ActionSheet (update to now / pick time), confirm to save
 - **Editable history** — tap any record to edit all fields, add/delete wakes, delete record

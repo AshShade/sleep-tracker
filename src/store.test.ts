@@ -54,10 +54,17 @@ describe('store', () => {
   })
 
   describe('utils', () => {
-    it('dur formats minutes', () => { expect(dur(30 * 60000)).toBe('30分钟') })
-    it('dur formats hours', () => { expect(dur(90 * 60000)).toBe('1时30分') })
-    it('fmtTime', () => { expect(fmtTime(new Date(2026, 0, 1, 23, 45).getTime())).toMatch(/23:45/) })
-    it('fmtDateTime', () => { expect(fmtDateTime(new Date(2026, 4, 15, 23, 45).getTime())).toMatch(/5\/15.*23:45/) })
+    it('dur formats minutes', () => { expect(dur(30 * 60000)).toMatch(/30/) })
+    it('dur formats hours', () => { expect(dur(90 * 60000)).toMatch(/1.*30/) })
+    it('dur formats zh', () => {
+      const orig = navigator.language
+      Object.defineProperty(navigator, 'language', { value: 'zh-CN', configurable: true })
+      expect(dur(30 * 60000)).toBe('30分钟')
+      expect(dur(90 * 60000)).toBe('1时30分')
+      Object.defineProperty(navigator, 'language', { value: orig, configurable: true })
+    })
+    it('fmtTime', () => { expect(fmtTime(new Date(2026, 0, 1, 23, 45).getTime())).toMatch(/23:45|11:45/) })
+    it('fmtDateTime', () => { expect(fmtDateTime(new Date(2026, 4, 15, 23, 45).getTime())).toMatch(/5\/15/) })
   })
 
   describe('constants', () => {

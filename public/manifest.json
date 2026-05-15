@@ -1,9 +1,9 @@
 {
-  "name": "睡眠记录",
-  "short_name": "睡眠",
+  "name": "Sleep Tracker",
+  "short_name": "Sleep",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#1a1b1e",
+  "theme_color": "#1a1b1e",
   "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml"}]
 }

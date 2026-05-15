@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Card, Button, Modal, ActionIcon, Group, Text, Stack, TextInput, SegmentedControl } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { useTranslation } from 'react-i18next'
 import { NightRecord, NapRecord, NIGHT_STEPS, NAP_STEPS, getTonight, setTonight, archiveNight, getCurrentNap, setCurrentNap, archiveNap, fmtTime } from './store'
 
 type Mode = 'night' | 'nap'
 
 export default function RecordTab() {
+  const { t } = useTranslation()
   const [mode, setMode] = useState<Mode>('night')
   const [night, setNight] = useState<NightRecord>(getTonight)
   const [nap, setNap] = useState<NapRecord>(getCurrentNap)
@@ -22,14 +24,14 @@ export default function RecordTab() {
     } else {
       const updated = { ...night, [key]: Date.now() }
       setTonight(updated); setNight(updated)
-      notifications.show({ message: `${NIGHT_STEPS.find(s => s.key === key)!.label} ✓`, position: 'bottom-center', autoClose: 2000 })
+      notifications.show({ message: t('recorded', { label: t(key) }), position: 'bottom-center', autoClose: 2000 })
     }
   }
 
   function addWake() {
     const updated = { ...night, wakes: [...night.wakes, Date.now()] }
     setTonight(updated); setNight(updated)
-    notifications.show({ message: `醒来 #${updated.wakes.length} ✓`, position: 'bottom-center', autoClose: 2000 })
+    notifications.show({ message: t('recorded', { label: t('wake') }), position: 'bottom-center', autoClose: 2000 })
   }
 
   function editWake(idx: number) { openPicker('night', 'wakes', idx) }
@@ -41,7 +43,7 @@ export default function RecordTab() {
   function submitNight() { setConfirmOpened(true) }
   function doSubmitNight() {
     setConfirmOpened(false); archiveNight(night); setNight({ type: 'night', wakes: [] })
-    notifications.show({ message: '已归档，晚安 🌙', position: 'bottom-center', autoClose: 3000 })
+    notifications.show({ message: t('archived_night'), position: 'bottom-center', autoClose: 3000 })
   }
 
   // --- Nap ---
@@ -51,13 +53,13 @@ export default function RecordTab() {
     } else {
       const updated = { ...nap, [key]: Date.now() }
       setCurrentNap(updated); setNap(updated)
-      notifications.show({ message: `${NAP_STEPS.find(s => s.key === key)!.label} ✓`, position: 'bottom-center', autoClose: 2000 })
+      notifications.show({ message: t('recorded', { label: t(key === 'start' ? 'nap_start' : 'nap_end') }), position: 'bottom-center', autoClose: 2000 })
     }
   }
 
   function submitNap() {
     archiveNap(nap); setNap({ type: 'nap' })
-    notifications.show({ message: '小觉已记录 ☀️', position: 'bottom-center', autoClose: 3000 })
+    notifications.show({ message: t('archived_nap'), position: 'bottom-center', autoClose: 3000 })
   }
 
   // --- Shared picker ---
@@ -106,7 +108,7 @@ export default function RecordTab() {
       const updated = { ...nap, [editTarget.key]: ts }; setCurrentNap(updated); setNap(updated)
     }
     setPickerOpened(false)
-    notifications.show({ message: '已更新为此刻 ✓', position: 'bottom-center', autoClose: 2000 })
+    notifications.show({ message: t('updated_now'), position: 'bottom-center', autoClose: 2000 })
   }
 
   const nightHasData = night.bed || night.trySlp || night.slp || night.wakes.length || night.up
@@ -114,71 +116,71 @@ export default function RecordTab() {
 
   return (
     <div className="record-page">
-      <h1 className="record-title">🌙 睡眠记录</h1>
+      <h1 className="record-title">🌙 {t('title')}</h1>
       <SegmentedControl fullWidth value={mode} onChange={(v) => setMode(v as Mode)} data={[
-        { label: '🌙 夜间', value: 'night' },
-        { label: '☀️ 小觉', value: 'nap' },
+        { label: t('mode_night'), value: 'night' },
+        { label: t('mode_nap'), value: 'nap' },
       ]} mb="sm" />
 
       {mode === 'night' ? (
         <Stack gap="xs">
-          {NIGHT_STEPS.map(({ key, label }) => (
+          {NIGHT_STEPS.map(({ key }) => (
             <Card key={key} onClick={() => tapNight(key)} className={`step-card ${night[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
-              <Text ta="center" size="lg">{label}</Text>
+              <Text ta="center" size="lg">{t(key)}</Text>
               {night[key] && <Text ta="center" size="sm" c="green">{fmtTime(night[key]!)} ✏️</Text>}
             </Card>
           ))}
           <Card onClick={addWake} className={`step-card ${night.wakes.length ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
-            <Text ta="center" size="lg">醒来{night.wakes.length > 0 && ` (${night.wakes.length}次)`}</Text>
+            <Text ta="center" size="lg">{night.wakes.length > 0 ? t('wake_count', { count: night.wakes.length }) : t('wake')}</Text>
           </Card>
           {night.wakes.map((w, i) => (
             <Group key={i} gap="xs" className="wake-item">
-              <Text size="sm" c="green" style={{ flex: 1, cursor: 'pointer' }} onClick={() => editWake(i)}>醒来 #{i + 1}: {fmtTime(w)} ✏️</Text>
+              <Text size="sm" c="green" style={{ flex: 1, cursor: 'pointer' }} onClick={() => editWake(i)}>{t('wake_n', { n: i + 1 })}: {fmtTime(w)} ✏️</Text>
               <ActionIcon variant="subtle" color="red" size="sm" onClick={() => deleteWake(i)}>✕</ActionIcon>
             </Group>
           ))}
           {nightHasData && (
             <div className="submit-area">
-              <Button fullWidth size="lg" radius="md" onClick={submitNight}>提交记录 ✓</Button>
+              <Button fullWidth size="lg" radius="md" onClick={submitNight}>{t('submit_night')}</Button>
             </div>
           )}
         </Stack>
       ) : (
         <Stack gap="xs">
-          {NAP_STEPS.map(({ key, label }) => (
+          {NAP_STEPS.map(({ key }) => (
             <Card key={key} onClick={() => tapNap(key)} className={`step-card ${nap[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
-              <Text ta="center" size="lg">{label}</Text>
+              <Text ta="center" size="lg">{t(key === 'start' ? 'nap_start' : 'nap_end')}</Text>
               {nap[key] && <Text ta="center" size="sm" c="green">{fmtTime(nap[key]!)} ✏️</Text>}
             </Card>
           ))}
           {napHasData && (
             <div className="submit-area">
-              <Button fullWidth size="lg" radius="md" onClick={submitNap}>提交小觉 ✓</Button>
+              <Button fullWidth size="lg" radius="md" onClick={submitNap}>{t('submit_nap')}</Button>
             </div>
           )}
         </Stack>
       )}
 
       {/* Time picker modal */}
-      <Modal opened={pickerOpened} onClose={() => setPickerOpened(false)} title="调整时间" centered>
+      <Modal opened={pickerOpened} onClose={() => setPickerOpened(false)} title={t('adjust_time')} centered>
         <Stack>
           <Group grow>
-            <TextInput type="date" value={dateValue} onChange={(e) => setDateValue(e.currentTarget.value)} label="日期" />
-            <TextInput type="time" value={timeValue} onChange={(e) => setTimeValue(e.currentTarget.value)} label="时间" />
+            <TextInput type="date" value={dateValue} onChange={(e) => setDateValue(e.currentTarget.value)} label={t('date')} />
+            <TextInput type="time" value={timeValue} onChange={(e) => setTimeValue(e.currentTarget.value)} label={t('time')} />
           </Group>
           <Group grow>
-            <Button variant="light" onClick={setToNow}>📍 此刻</Button>
-            <Button onClick={() => { handlePickerSubmit(); setPickerOpened(false) }}>确定</Button>
+            <Button variant="light" onClick={setToNow}>{t('now')}</Button>
+            <Button onClick={() => { handlePickerSubmit(); setPickerOpened(false) }}>{t('confirm_yes')}</Button>
           </Group>
         </Stack>
       </Modal>
 
       {/* Submit confirmation (night only) */}
-      <Modal opened={confirmOpened} onClose={() => setConfirmOpened(false)} title="确认" centered>
-        <Text>确认提交本次睡眠记录？</Text>
+      <Modal opened={confirmOpened} onClose={() => setConfirmOpened(false)} title={t('confirm_title')} centered>
+        <Text>{t('confirm_submit')}</Text>
         <Group mt="md">
-          <Button variant="default" onClick={() => setConfirmOpened(false)} flex={1}>取消</Button>
-          <Button onClick={doSubmitNight} flex={1}>确认</Button>
+          <Button variant="default" onClick={() => setConfirmOpened(false)} flex={1}>{t('confirm_cancel')}</Button>
+          <Button onClick={doSubmitNight} flex={1}>{t('confirm_yes')}</Button>
         </Group>
       </Modal>
     </div>

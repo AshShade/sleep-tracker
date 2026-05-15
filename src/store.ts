@@ -15,16 +15,16 @@ export type NapRecord = {
 
 export type SleepEntry = NightRecord | NapRecord
 
-export const NIGHT_STEPS: { key: keyof Omit<NightRecord, 'wakes' | 'type'>; label: string }[] = [
-  { key: 'bed', label: '上床' },
-  { key: 'trySlp', label: '尝试入睡' },
-  { key: 'slp', label: '入睡' },
-  { key: 'up', label: '起床' },
+export const NIGHT_STEPS: { key: keyof Omit<NightRecord, 'wakes' | 'type'> }[] = [
+  { key: 'bed' },
+  { key: 'trySlp' },
+  { key: 'slp' },
+  { key: 'up' },
 ]
 
-export const NAP_STEPS: { key: keyof Omit<NapRecord, 'type'>; label: string }[] = [
-  { key: 'start', label: '入睡' },
-  { key: 'end', label: '醒来' },
+export const NAP_STEPS: { key: keyof Omit<NapRecord, 'type'> }[] = [
+  { key: 'start' },
+  { key: 'end' },
 ]
 
 const TONIGHT_KEY = 'sleep_tonight'
@@ -89,14 +89,20 @@ export function archiveNap(record: NapRecord) {
 
 export function dur(ms: number): string {
   const m = Math.round(ms / 60000)
-  return m < 60 ? `${m}分钟` : `${Math.floor(m / 60)}时${m % 60}分`
+  const lang = (typeof navigator !== 'undefined' && navigator.language.startsWith('zh')) ? 'zh' : 'en'
+  if (lang === 'zh') {
+    return m < 60 ? `${m}分钟` : `${Math.floor(m / 60)}时${m % 60 ? m % 60 + '分' : ''}`
+  }
+  if (m < 60) return `${m}min`
+  const h = Math.floor(m / 60)
+  return m % 60 === 0 ? `${h}h` : `${h}h${m % 60}m`
 }
 
 export function fmtTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 
 export function fmtDateTime(ts: number): string {
   const d = new Date(ts)
-  return `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+  return `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
 }
