@@ -1,55 +1,18 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100dvh; }
+body { font-family: -apple-system, system-ui, sans-serif; background: #1a1b1e; color: #c1c2c5; min-height: 100dvh; }
 
-:root {
-  --adm-color-primary: #6366f1;
-  --adm-color-background: #0f172a;
-  --adm-color-text: #e2e8f0;
-  --adm-color-weak: #94a3b8;
-  --adm-color-border: #334155;
-  --adm-font-family: -apple-system, system-ui, sans-serif;
-}
-
-.adm-tab-bar { background: #1e293b; }
-.adm-tab-bar-item-active .adm-tab-bar-item-icon,
-.adm-tab-bar-item-active .adm-tab-bar-item-title { color: #6366f1; }
-.adm-button-outline { --border-color: #475569; --text-color: #94a3b8; }
-.adm-list { --border-top: none; --border-bottom: none; }
-.adm-list-body { background: transparent; }
-.adm-list-item { background: #1e293b; }
-.adm-card { --adm-card-body-padding: 12px; }
-.adm-empty-description { color: #64748b; }
-
-/* Layout utilities */
 .app-container { display: flex; flex-direction: column; height: 100dvh; max-width: 400px; margin: 0 auto; }
 .app-content { flex: 1; overflow: auto; padding: 1rem; }
-.tab-border { border-top: 1px solid #334155; }
+.app-tabs { border-top: 1px solid #2c2e33; }
 
-/* RecordTab */
 .record-page { display: flex; flex-direction: column; height: 100%; }
 .record-title { text-align: center; font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; }
-.record-steps { display: flex; flex-direction: column; gap: 0.5rem; }
-.step-card { border-radius: 12px !important; border: 2px solid #334155 !important; background: #1e293b !important; transition: transform 0.1s; }
-.step-card:active { transform: scale(0.95); }
-.step-card.recorded { border-color: #22c55e !important; background: #052e16 !important; }
-.step-inner { text-align: center; }
-.step-label { font-size: 1.1rem; color: #e2e8f0; }
-.step-time { font-size: 0.85rem; color: #4ade80; margin-top: 0.25rem; }
+.step-card { cursor: pointer; transition: transform 0.1s; }
+.step-card:active { transform: scale(0.97); }
+.step-card.recorded { border-color: #40c057 !important; background: rgba(64, 192, 87, 0.1) !important; }
 .submit-area { margin-top: auto; padding-top: 0.75rem; }
-.submit-btn { border-radius: 12px !important; }
-.adm-picker-view-column:first-child { display: none; }
+.wake-item { padding: 0.4rem 0.75rem; background: #25262b; border-radius: 6px; }
 
-/* HistoryTab */
-.export-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
-.export-row .adm-button { flex: 1; }
-.stats-card { background: #1e293b !important; border-radius: 12px !important; margin-bottom: 0.75rem; }
-.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; font-size: 0.8rem; }
-.stats-label { color: #94a3b8; }
-.stats-value { color: #a5b4fc; font-weight: 600; }
-.hist-date { font-weight: 600; color: #a5b4fc; }
-.hist-sleep { color: #4ade80; font-size: 0.75rem; }
-
-/* TrendTab */
-.trend-card { background: #1e293b; border-radius: 12px; padding: 0.75rem; }
-.trend-title { font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.5rem; font-weight: 500; }
-.empty-msg { color: #64748b; padding: 1rem 0; }
+.trend-card { background: #25262b; border-radius: 12px; padding: 0.75rem; }
+.trend-title { font-size: 0.85rem; color: #909296; margin-bottom: 0.5rem; font-weight: 500; }
+.empty-msg { color: #909296; padding: 1rem 0; }

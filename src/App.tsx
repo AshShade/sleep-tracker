@@ -1,14 +1,11 @@
 import { useState } from 'react'
-import { TabBar } from 'antd-mobile'
-import { ClockCircleOutline, HistogramOutline, FileOutline } from 'antd-mobile-icons'
+import { Tabs } from '@mantine/core'
 import RecordTab from './RecordTab'
 import HistoryTab from './HistoryTab'
 import TrendTab from './TrendTab'
 
-type Tab = 'record' | 'history' | 'trend'
-
 export default function App() {
-  const [tab, setTab] = useState<Tab>('record')
+  const [tab, setTab] = useState<string | null>('record')
 
   return (
     <div className="app-container">
@@ -17,11 +14,13 @@ export default function App() {
         {tab === 'history' && <HistoryTab />}
         {tab === 'trend' && <TrendTab />}
       </div>
-      <TabBar activeKey={tab} onChange={k => setTab(k as Tab)} className="tab-border">
-        <TabBar.Item key="record" icon={<ClockCircleOutline />} title="记录" />
-        <TabBar.Item key="history" icon={<FileOutline />} title="历史" />
-        <TabBar.Item key="trend" icon={<HistogramOutline />} title="趋势" />
-      </TabBar>
+      <Tabs value={tab} onChange={setTab} className="app-tabs">
+        <Tabs.List grow>
+          <Tabs.Tab value="record">记录</Tabs.Tab>
+          <Tabs.Tab value="history">历史</Tabs.Tab>
+          <Tabs.Tab value="trend">趋势</Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
     </div>
   )
 }

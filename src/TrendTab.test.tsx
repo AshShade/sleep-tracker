@@ -12,8 +12,8 @@ describe('TrendTab', () => {
 
   it('renders chart with sufficient data', () => {
     const records = [
-      { bed: 1000, trySlp: 2000, slp: 3000, wake: 30000000, up: 40000000 },
-      { bed: 2000, trySlp: 3000, slp: 4000, wake: 40000000, up: 50000000 },
+      { bed: 1000, trySlp: 2000, slp: 3000, wakes: [30000000], up: 40000000 },
+      { bed: 2000, trySlp: 3000, slp: 4000, wakes: [40000000], up: 50000000 },
     ]
     localStorage.setItem('sleep_history', JSON.stringify(records))
     render(<TrendTab />)

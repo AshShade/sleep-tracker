@@ -1,91 +1,154 @@
-import { useState, useRef } from 'react'
-import { Card, Button, Toast, DatePicker, Modal } from 'antd-mobile'
+import { useState } from 'react'
+import { Card, Button, Modal, ActionIcon, Group, Text, Stack } from '@mantine/core'
+import { TimeInput, DateInput } from '@mantine/dates'
+import { notifications } from '@mantine/notifications'
 import { STEPS, SleepRecord, getTonight, setTonight, archiveAndReset, fmtTime } from './store'
+
+type StepKey = keyof Omit<SleepRecord, 'wakes'>
 
 export default function RecordTab() {
   const [record, setRecord] = useState<SleepRecord>(getTonight)
-  const [pickerVisible, setPickerVisible] = useState(false)
-  const [confirmVisible, setConfirmVisible] = useState(false)
-  const editingRef = useRef<keyof SleepRecord | null>(null)
+  const [pickerOpened, setPickerOpened] = useState(false)
+  const [confirmOpened, setConfirmOpened] = useState(false)
+  const [actionTarget, setActionTarget] = useState<{ type: 'step'; key: StepKey } | { type: 'wake'; idx: number } | null>(null)
+  const [timeValue, setTimeValue] = useState('')
+  const [dateValue, setDateValue] = useState<Date | null>(null)
 
-  function tap(key: keyof SleepRecord) {
+  function openPicker(target: typeof actionTarget) {
+    setActionTarget(target)
+    if (target) {
+      const ts = target.type === 'step' ? record[target.key]! : record.wakes[target.idx]
+      const d = new Date(ts)
+      setTimeValue(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+      setDateValue(d)
+    }
+    setPickerOpened(true)
+  }
+
+  function tap(key: StepKey) {
     if (record[key]) {
-      editingRef.current = key
-      setPickerVisible(true)
+      openPicker({ type: 'step', key })
     } else {
       const updated = { ...record, [key]: Date.now() }
       setTonight(updated)
       setRecord(updated)
-      Toast.show({ content: `${STEPS.find(s => s.key === key)!.label} ✓`, position: 'bottom' })
+      notifications.show({ message: `${STEPS.find(s => s.key === key)!.label} ✓`, position: 'bottom-center', autoClose: 2000 })
     }
   }
 
-  /* v8 ignore start */
-  function handlePickerConfirm(val: Date) {
-    const key = editingRef.current
-    if (!key) return
-    const base = record[key] ? new Date(record[key]!) : new Date()
-    base.setHours(val.getHours(), val.getMinutes(), 0, 0)
-    const updated = { ...record, [key]: base.getTime() }
+  function addWake() {
+    const updated = { ...record, wakes: [...record.wakes, Date.now()] }
     setTonight(updated)
     setRecord(updated)
-    setPickerVisible(false)
+    notifications.show({ message: `醒来 #${updated.wakes.length} ✓`, position: 'bottom-center', autoClose: 2000 })
   }
 
-  const pickerDefault = () => {
-    const key = editingRef.current
-    return key && record[key] ? new Date(record[key]!) : new Date()
+  function editWake(idx: number) {
+    openPicker({ type: 'wake', idx })
   }
-  /* v8 ignore stop */
+
+  function deleteWake(idx: number) {
+    const updated = { ...record, wakes: record.wakes.filter((_, i) => i !== idx) }
+    setTonight(updated)
+    setRecord(updated)
+  }
+
+  function handlePickerSubmit() {
+    if (!actionTarget || !timeValue || !dateValue) return
+    const [h, m] = timeValue.split(':').map(Number)
+    const d = new Date(dateValue)
+    d.setHours(h, m, 0, 0)
+    if (actionTarget.type === 'step') {
+      const updated = { ...record, [actionTarget.key]: d.getTime() }
+      setTonight(updated)
+      setRecord(updated)
+    } else {
+      const wakes = [...record.wakes]
+      wakes[actionTarget.idx] = d.getTime()
+      const updated = { ...record, wakes }
+      setTonight(updated)
+      setRecord(updated)
+    }
+    setPickerOpened(false)
+  }
+
+  const [skipSaveOnClose, setSkipSaveOnClose] = useState(false)
+
+  function setToNow() {
+    if (!actionTarget) return
+    if (actionTarget.type === 'step') {
+      const updated = { ...record, [actionTarget.key]: Date.now() }
+      setTonight(updated)
+      setRecord(updated)
+    } else {
+      const wakes = [...record.wakes]
+      wakes[actionTarget.idx] = Date.now()
+      const updated = { ...record, wakes }
+      setTonight(updated)
+      setRecord(updated)
+    }
+    setSkipSaveOnClose(true)
+    setPickerOpened(false)
+    notifications.show({ message: '已更新为此刻 ✓', position: 'bottom-center', autoClose: 2000 })
+  }
 
   function doSubmit() {
-    setConfirmVisible(false)
+    setConfirmOpened(false)
     archiveAndReset(record)
-    setRecord({})
-    Toast.show({ icon: 'success', content: '已归档，晚安 🌙' })
+    setRecord({ wakes: [] })
+    notifications.show({ message: '已归档，晚安 🌙', position: 'bottom-center', autoClose: 3000 })
   }
+
+  const hasData = record.bed || record.trySlp || record.slp || record.wakes.length || record.up
 
   return (
     <div className="record-page">
       <h1 className="record-title">🌙 睡眠记录</h1>
-      <div className="record-steps">
+      <Stack gap="xs">
         {STEPS.map(({ key, label }) => (
-          <Card key={key} onClick={() => tap(key)} className={`step-card ${record[key] ? 'recorded' : ''}`}>
-            <div className="step-inner">
-              <span className="step-label">{label}</span>
-              {record[key] && <div className="step-time">{fmtTime(record[key]!)} ✏️</div>}
-            </div>
+          <Card key={key} onClick={() => tap(key)} className={`step-card ${record[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
+            <Text ta="center" size="lg">{label}</Text>
+            {record[key] && <Text ta="center" size="sm" c="green">{fmtTime(record[key]!)} ✏️</Text>}
           </Card>
         ))}
-      </div>
-      {Object.keys(record).length > 0 && (
+        <Card onClick={addWake} className={`step-card ${record.wakes.length ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
+          <Text ta="center" size="lg">醒来{record.wakes.length > 0 && ` (${record.wakes.length}次)`}</Text>
+        </Card>
+        {record.wakes.map((w, i) => (
+          <Group key={i} gap="xs" className="wake-item">
+            <Text size="sm" c="green" style={{ flex: 1, cursor: 'pointer' }} onClick={() => editWake(i)}>
+              醒来 #{i + 1}: {fmtTime(w)} ✏️
+            </Text>
+            <ActionIcon variant="subtle" color="red" size="sm" onClick={() => deleteWake(i)}>✕</ActionIcon>
+          </Group>
+        ))}
+      </Stack>
+
+      {hasData && (
         <div className="submit-area">
-          <Button block color="primary" size="large" className="submit-btn" onClick={() => setConfirmVisible(true)}>
-            提交记录 ✓
-          </Button>
+          <Button fullWidth size="lg" radius="md" onClick={() => setConfirmOpened(true)}>提交记录 ✓</Button>
         </div>
       )}
-      {/* v8 ignore start */}
-      <DatePicker
-        visible={pickerVisible}
-        onClose={() => setPickerVisible(false)}
-        onConfirm={handlePickerConfirm}
-        precision="minute"
-        defaultValue={pickerDefault()}
-        min={new Date(new Date().getFullYear(), 0, 1)}
-        max={new Date()}
-      />
-      {/* v8 ignore stop */}
-      <Modal
-        visible={confirmVisible}
-        content="确认提交本次睡眠记录？"
-        closeOnAction
-        onClose={() => setConfirmVisible(false)}
-        actions={[
-          { key: 'cancel', text: '取消', onClick: () => setConfirmVisible(false) },
-          { key: 'confirm', text: '确认', primary: true, onClick: doSubmit },
-        ]}
-      />
+
+      {/* Time picker modal */}
+      <Modal opened={pickerOpened} onClose={() => { if (!skipSaveOnClose) handlePickerSubmit(); setSkipSaveOnClose(false); setPickerOpened(false) }} title="调整时间" centered>
+        <Stack>
+          <Group grow>
+            <DateInput value={dateValue} onChange={(v) => setDateValue(v ? new Date(v) : null)} label="日期" />
+            <TimeInput value={timeValue} onChange={(e) => setTimeValue(e.currentTarget.value)} label="时间" />
+          </Group>
+          <Button variant="light" onClick={setToNow} fullWidth>📍 此刻</Button>
+        </Stack>
+      </Modal>
+
+      {/* Submit confirmation */}
+      <Modal opened={confirmOpened} onClose={() => setConfirmOpened(false)} title="确认" centered>
+        <Text>确认提交本次睡眠记录？</Text>
+        <Group mt="md">
+          <Button variant="default" onClick={() => setConfirmOpened(false)} flex={1}>取消</Button>
+          <Button onClick={doSubmit} flex={1}>确认</Button>
+        </Group>
+      </Modal>
     </div>
   )
 }

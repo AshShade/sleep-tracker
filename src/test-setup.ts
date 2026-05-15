@@ -1,14 +1,19 @@
 import '@testing-library/jest-dom'
 
-// Suppress rc-util's unmountComponentAtNode error (removed in React 19, antd-mobile compat issue)
-const originalConsoleError = console.error
-console.error = (...args: unknown[]) => {
-  if (typeof args[0] === 'string' && args[0].includes('unmountComponentAtNode')) return
-  originalConsoleError(...args)
-}
-
-// Suppress unhandled rejection from rc-util legacy unmount
-process.on('unhandledRejection', (reason: unknown) => {
-  if (reason instanceof TypeError && reason.message.includes('unmountComponentAtNode')) return
-  throw reason
+// Mantine requires matchMedia in jsdom
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: query.includes('prefers-color-scheme: dark'),
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }),
 })
+
+// ResizeObserver mock for Mantine
+;(globalThis as any).ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
