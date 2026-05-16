@@ -124,7 +124,7 @@ export default function RecordTab() {
 
       {mode === 'night' ? (
         <Stack gap="xs">
-          {NIGHT_STEPS.map(({ key }) => (
+          {NIGHT_STEPS.slice(0, 3).map(({ key }) => (
             <Card key={key} onClick={() => tapNight(key)} className={`step-card ${night[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
               <Text ta="center" size="lg">{t(key)}</Text>
               {night[key] && <Text ta="center" size="sm" c="green">{fmtTime(night[key]!)} ✏️</Text>}
@@ -138,6 +138,12 @@ export default function RecordTab() {
               <Text size="sm" c="green" style={{ flex: 1, cursor: 'pointer' }} onClick={() => editWake(i)}>{t('wake_n', { n: i + 1 })}: {fmtTime(w)} ✏️</Text>
               <ActionIcon variant="subtle" color="red" size="sm" onClick={() => deleteWake(i)}>✕</ActionIcon>
             </Group>
+          ))}
+          {NIGHT_STEPS.slice(3).map(({ key }) => (
+            <Card key={key} onClick={() => tapNight(key)} className={`step-card ${night[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
+              <Text ta="center" size="lg">{t(key)}</Text>
+              {night[key] && <Text ta="center" size="sm" c="green">{fmtTime(night[key]!)} ✏️</Text>}
+            </Card>
           ))}
           {nightHasData && (
             <div className="submit-area">
