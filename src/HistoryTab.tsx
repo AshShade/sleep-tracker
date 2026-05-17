@@ -76,11 +76,11 @@ export default function HistoryTab() {
   const avg = (k1: string, k2: string) => {
     const vals = nights.filter(r => {
       const v1 = k1 === 'wakes' ? r.wakes[r.wakes.length - 1] : (r as any)[k1]
-      const v2 = k2 === 'wakes' ? r.wakes[0] : (r as any)[k2]
+      const v2 = k2 === 'wakes' ? r.wakes[r.wakes.length - 1] : (r as any)[k2]
       return v1 && v2
     }).map(r => {
       const v1 = k1 === 'wakes' ? r.wakes[r.wakes.length - 1] : (r as any)[k1]
-      const v2 = k2 === 'wakes' ? r.wakes[0] : (r as any)[k2]
+      const v2 = k2 === 'wakes' ? r.wakes[r.wakes.length - 1] : (r as any)[k2]
       return Math.abs(v2 - v1)
     })
     return vals.length ? dur(vals.reduce((a, b) => a + b, 0) / vals.length) : '-'
@@ -133,7 +133,7 @@ export default function HistoryTab() {
             )
           }
           const d = new Date(r.up || r.wakes[r.wakes.length - 1] || r.slp || r.bed || 0)
-          const sleepMs = r.slp && r.wakes[0] ? r.wakes[0] - r.slp : 0
+          const sleepMs = r.slp && r.wakes[r.wakes.length - 1] ? r.wakes[r.wakes.length - 1] - r.slp : 0
           return (
             <Card key={i} radius="sm" withBorder padding="xs" onClick={() => setEditIndex(i)} style={{ cursor: 'pointer' }}>
               <Group><Text size="sm">🌙 {d.toLocaleDateString('zh-CN')}</Text>{sleepMs > 0 && <Text size="xs" c="green">💤 {dur(sleepMs)}</Text>}</Group>
