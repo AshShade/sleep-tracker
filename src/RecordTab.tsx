@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Button, Modal, ActionIcon, Group, Text, Stack, TextInput, SegmentedControl } from '@mantine/core'
+import { Card, Button, Modal, ActionIcon, Group, Text, Stack, TextInput, SegmentedControl, NumberInput, SimpleGrid } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useTranslation } from 'react-i18next'
 import { NightRecord, NapRecord, NIGHT_STEPS, NAP_STEPS, getTonight, setTonight, archiveNight, getCurrentNap, setCurrentNap, archiveNap, fmtTime } from './store'
@@ -16,6 +16,8 @@ export default function RecordTab() {
   const [timeValue, setTimeValue] = useState('')
   const [dateValue, setDateValue] = useState('')
   const [editTarget, setEditTarget] = useState<{ mode: Mode; key: string; wakeIdx?: number } | null>(null)
+  const [onsetOpened, setOnsetOpened] = useState(false)
+  const [onsetMin, setOnsetMin] = useState<number | string | null>(null)
 
   // --- Night ---
   function tapNight(key: keyof Omit<NightRecord, 'wakes' | 'type'>) {
@@ -42,7 +44,11 @@ export default function RecordTab() {
 
   function submitNight() { setConfirmOpened(true) }
   function doSubmitNight() {
-    setConfirmOpened(false); archiveNight(night); setNight({ type: 'night', wakes: [] })
+    setConfirmOpened(false)
+    const final = onsetMin && night.trySlp && !night.slp
+      ? { ...night, slp: night.trySlp + Number(onsetMin) * 60000 }
+      : night
+    archiveNight(final); setNight({ type: 'night', wakes: [] }); setOnsetMin(null)
     notifications.show({ message: t('archived_night'), position: 'bottom-center', autoClose: 3000 })
   }
 
@@ -124,12 +130,17 @@ export default function RecordTab() {
 
       {mode === 'night' ? (
         <Stack gap="xs">
-          {NIGHT_STEPS.slice(0, 3).map(({ key }) => (
+          {NIGHT_STEPS.slice(0, 2).map(({ key }) => (
             <Card key={key} onClick={() => tapNight(key)} className={`step-card ${night[key] ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
               <Text ta="center" size="lg">{t(key)}</Text>
               {night[key] && <Text ta="center" size="sm" c="green">{fmtTime(night[key]!)} ✏️</Text>}
             </Card>
           ))}
+          <Card className={`step-card ${onsetMin ? 'recorded' : ''}`} padding="md" radius="md" withBorder
+            onClick={() => setOnsetOpened(true)}>
+            <Text ta="center" size="lg">{t('onset_duration')}</Text>
+            {onsetMin && <Text ta="center" size="sm" c="green">{onsetMin}{t('onset_min')} ✏️</Text>}
+          </Card>
           <Card onClick={addWake} className={`step-card ${night.wakes.length ? 'recorded' : ''}`} padding="md" radius="md" withBorder>
             <Text ta="center" size="lg">{night.wakes.length > 0 ? t('wake_count', { count: night.wakes.length }) : t('wake')}</Text>
           </Card>
@@ -188,6 +199,25 @@ export default function RecordTab() {
           <Button variant="default" onClick={() => setConfirmOpened(false)} flex={1}>{t('confirm_cancel')}</Button>
           <Button onClick={doSubmitNight} flex={1}>{t('confirm_yes')}</Button>
         </Group>
+      </Modal>
+
+      {/* Onset duration picker */}
+      <Modal opened={onsetOpened} onClose={() => setOnsetOpened(false)} title={t('onset_duration')} centered>
+        <Stack>
+          <SimpleGrid cols={3}>
+            {[5, 10, 15, 20, 30, 45].map(m => (
+              <Button key={m} size="lg" variant={onsetMin === m ? 'filled' : 'light'}
+                onClick={() => { setOnsetMin(m); setOnsetOpened(false) }}>
+                {m}
+              </Button>
+            ))}
+          </SimpleGrid>
+          <NumberInput value={onsetMin ?? ''} onChange={setOnsetMin} min={1} max={180}
+            suffix={t('onset_min')} size="lg" />
+          <Button fullWidth size="md" onClick={() => setOnsetOpened(false)} disabled={!onsetMin}>
+            {t('confirm_yes')}
+          </Button>
+        </Stack>
       </Modal>
     </div>
   )
